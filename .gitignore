@@ -1,0 +1,4 @@
+node_modules
+.env
+authorsSeed.js
+booksSeed.js
