@@ -1,3 +1,4 @@
+const { removeDuplicatesFromBooks } = require('../../utils/removeDuplicates');
 const Author = require('../models/authors');
 
 const getAuthors = async (req, res, next) => {
@@ -22,7 +23,7 @@ const getAuthorByName = async (req, res, next) => {
 const getAuthorById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const author = await Author.findById(id);
+    const author = await Author.findById(id).populate('books');
     return res.status(200).json(author);
   } catch (error) {
     return res.status(400).json('Error en la solicitud Get by Id');
@@ -31,11 +32,15 @@ const getAuthorById = async (req, res, next) => {
 
 const postAuthor = async (req, res, next) => {
   try {
-    const newAuthor = new Author(req.body);
+    //esto es nuevo
+    req.body.books = removeDuplicatesFromBooks(req.body.books || []);
+    //hasta aquí
 
+    const newAuthor = new Author(req.body);
     const authorSaved = await newAuthor.save();
     return res.status(201).json(authorSaved);
   } catch (error) {
+    console.error(error);
     return res.status(400).json('Error en la solicitud Post');
   }
 };
@@ -46,8 +51,15 @@ const putAuthor = async (req, res, next) => {
     const oldAuthor = await Author.findById(id);
     const newAuthor = new Author(req.body);
     newAuthor._id = id;
-    newAuthor.books = [...oldAuthor.books, ...req.body.books];
-    const updatedAuthor = await Author.findByIdAndUpdate(id, newAuthor, {
+    const combinedBooks = (newAuthor.books = [
+      ...oldAuthor.books,
+      ...req.body.books
+    ]);
+    const uniqueBooks = removeDuplicatesFromBooks(combinedBooks);
+
+    const updateFields = { newAuthor, books: uniqueBooks };
+
+    const updatedAuthor = await Author.findByIdAndUpdate(id, updateFields, {
       new: true
     });
     return res.status(200).json(updatedAuthor);

@@ -13,5 +13,10 @@ const authorSchema = new mongoose.Schema(
   }
 );
 
+authorSchema.pre('save', function (next) {
+  this.books = [...new Set(this.books.map(String))];
+  next();
+});
+
 const Author = mongoose.model('authors', authorSchema, 'authors');
 module.exports = Author;
